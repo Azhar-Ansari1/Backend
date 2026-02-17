@@ -153,9 +153,9 @@ const logoutUser = asyncHandler(async (req, res) => {
     await User.findByIdAndUpdate(
         req.user._id,
         {
-            $set: {
-                refreshToken: undefined
-            }
+            $unset: {
+                refreshToken: 1     
+               }
         },
         {
             new: true
@@ -173,7 +173,9 @@ const logoutUser = asyncHandler(async (req, res) => {
 })
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
-    const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken
+    // console.log("cookie", req.cookies);
+    // console.log("body", req.body);
+    const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken
 
     if (!incomingRefreshToken) {
         throw new ApiError(400, "Refresh token is missing")
@@ -311,7 +313,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
     const channel = await User.aggregate([
         {
             $match: {
-                username: username?.toLowerCase
+                username: username?.toLowerCase()
             }
         },
         {
@@ -334,10 +336,10 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         {
             $addFields: {
                 subscribersCount: {
-                    $size: "subscribers"
+                    $size: "$subscribers"
                   },
                   channelSubscribedToCount: {
-                    $size: "subscribedTo"
+                    $size: "$subscribedTo"
                   },
                   isSubscribed: {
                     if: {$in: [req.user?._id, "$subscribers.subscriber"]},
@@ -372,7 +374,7 @@ const getWatchHistory = asyncHandler(async(req, res)=>{
     const user = User.aggregate([
         {
             $match: {
-                _id: mongoose.Types.ObjectId(req.user._id)
+                _id: new mongoose.Types.ObjectId(req.user._id)
             }
         },
         {
@@ -413,7 +415,7 @@ const getWatchHistory = asyncHandler(async(req, res)=>{
     ])
     return res.status(200).json(new ApiResponse(
         200,
-        user[0].watchHistory,
+        user[0]?.watchHistory,
         "Watch History Fetched Successfully"
     ))
 })
